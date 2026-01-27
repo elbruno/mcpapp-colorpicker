@@ -74,6 +74,44 @@ Add the following to your VS Code MCP configuration (`.vscode/mcp.json`):
 
 In VS Code with the MCP extension, invoke the `ColorPicker` tool to open the interactive color picker UI.
 
+### 5. (Optional) Expose with ngrok
+
+To access the MCP app from a remote location or share it with others, you can use ngrok to expose your local server:
+
+#### Download ngrok
+
+1. Visit [ngrok.com](https://ngrok.com/)
+2. Sign up for a free account
+3. Download the ngrok executable for your operating system
+4. Extract it to a folder and add it to your PATH, or use it directly
+
+#### Run ngrok
+
+In a new terminal, expose your local server:
+
+```bash
+ngrok http 3001
+```
+
+ngrok will display a public URL like `https://abc123def456.ngrok.io` that forwards to your local `http://localhost:3001`.
+
+#### Update VS Code Configuration
+
+Replace your local URL with the ngrok URL in `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "color-picker": {
+      "type": "http",
+      "url": "https://abc123def456.ngrok.io/mcp"
+    }
+  }
+}
+```
+
+Now you can use the `ColorPicker` tool from any location!
+
 ## 🏗️ Project Structure
 
 ```

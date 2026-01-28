@@ -53,7 +53,7 @@ public static class ColorPickerHtmlProvider
       background: var(--vscode-editor-background, #1e1e1e);
       color: var(--vscode-editor-foreground, #cccccc);
     }
-    .container { max-width: 400px; margin: 0 auto; }
+    .container { max-width: 800px; margin: 0 auto; }
     h1 { font-size: 18px; margin-bottom: 16px; text-align: center; }
     .picker-row { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
     #color-input {
@@ -98,7 +98,19 @@ public static class ColorPickerHtmlProvider
       display: flex; align-items: center; justify-content: center;
       font-size: 14px; font-weight: 600;
       text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      position: relative;
+      overflow: hidden;
     }
+    .preview-info {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .preview-hex { font-size: 18px; font-weight: 700; }
+    .preview-rgb { font-size: 11px; opacity: 0.9; }
     .actions { display: flex; gap: 8px; margin-bottom: 16px; }
     .btn {
       flex: 1; padding: 10px 16px; border: none; border-radius: 6px;
@@ -121,8 +133,70 @@ public static class ColorPickerHtmlProvider
     .section-title {
       font-size: 12px; font-weight: 600; margin-bottom: 8px;
       color: var(--vscode-descriptionForeground, #888);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .palette { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+    .filter-info {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--vscode-descriptionForeground, #666);
+      font-style: italic;
+    }
+    
+    /* Gradient Palette Styles */
+    .gradient-palette-container {
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .gradient-palette {
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      gap: 3px;
+      margin-bottom: 16px;
+    }
+    .gradient-color {
+      aspect-ratio: 1;
+      border-radius: 3px;
+      cursor: crosshair;
+      transition: transform 0.1s, box-shadow 0.1s;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .gradient-color:hover {
+      transform: scale(1.3);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      z-index: 10;
+      border: 2px solid var(--vscode-focusBorder, #007fd4);
+    }
+    .gradient-color.selected {
+      border: 2px solid #fff;
+      box-shadow: 0 0 8px rgba(255,255,255,0.8);
+    }
+    
+    /* Hue Strip */
+    .hue-strip {
+      height: 30px;
+      border-radius: 6px;
+      background: linear-gradient(to right, 
+        #ff0000 0%, #ffff00 17%, #00ff00 33%, 
+        #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+      cursor: crosshair;
+      position: relative;
+      margin-bottom: 16px;
+      border: 2px solid var(--vscode-input-border, #3c3c3c);
+    }
+    .hue-indicator {
+      position: absolute;
+      top: -4px;
+      width: 4px;
+      height: calc(100% + 8px);
+      background: white;
+      border: 2px solid black;
+      pointer-events: none;
+      transform: translateX(-50%);
+    }
+    
+    .palette { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
     .palette-color {
       aspect-ratio: 1; border-radius: 4px; border: 2px solid transparent;
       cursor: pointer; transition: transform 0.1s, border-color 0.2s;
@@ -140,7 +214,7 @@ public static class ColorPickerHtmlProvider
 </head>
 <body>
   <div class="container">
-    <h1>🎨 Color Picker</h1>
+    <h1>🎨 Advanced Color Picker</h1>
     
     <div class="picker-row">
       <input type="color" id="color-input" value="#3498DB" />
@@ -163,11 +237,26 @@ public static class ColorPickerHtmlProvider
       </div>
     </div>
     
-    <div class="preview" id="preview">Selected Color</div>
+    <div class="preview" id="preview">
+      <div class="preview-info">
+        <span class="preview-hex" id="preview-hex">#3498DB</span>
+        <span class="preview-rgb" id="preview-rgb">rgb(52, 152, 219)</span>
+      </div>
+    </div>
     
     <div class="actions">
       <button class="btn btn-secondary" id="random-btn">🎲 Random</button>
       <button class="btn btn-primary" id="select-btn">✓ Use This Color</button>
+    </div>
+    
+    <div class="section-title">Hue Selector <span class="filter-info">- Click to select base hue</span></div>
+    <div class="hue-strip" id="hue-strip">
+      <div class="hue-indicator" id="hue-indicator"></div>
+    </div>
+    
+    <div class="section-title">Gradient Palette <span class="filter-info">- Hover to preview, click to select</span></div>
+    <div class="gradient-palette-container">
+      <div class="gradient-palette" id="gradient-palette"></div>
     </div>
     
     <div class="section-title">Quick Colors</div>
@@ -185,6 +274,13 @@ public static class ColorPickerHtmlProvider
         g: parseInt(result[2], 16),
         b: parseInt(result[3], 16)
       } : { r: 0, g: 0, b: 0 };
+    }
+    
+    function rgbToHex(r, g, b) {
+      return '#' + [r, g, b].map(x => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      }).join('').toUpperCase();
     }
     
     function rgbToHsl(r, g, b) {
@@ -205,6 +301,35 @@ public static class ColorPickerHtmlProvider
       return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
     }
     
+    function hslToRgb(h, s, l) {
+      h /= 360;
+      s /= 100;
+      l /= 100;
+      let r, g, b;
+      if (s === 0) {
+        r = g = b = l;
+      } else {
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      return {
+        r: Math.round(r * 255),
+        g: Math.round(g * 255),
+        b: Math.round(b * 255)
+      };
+    }
+    
     function getContrastColor(hex) {
       const { r, g, b } = hexToRgb(hex);
       const brightness = (r * 299 + g * 587 + b * 114) / 1000;
@@ -221,57 +346,161 @@ public static class ColorPickerHtmlProvider
     const rgbValue = document.getElementById('rgb-value');
     const hslValue = document.getElementById('hsl-value');
     const preview = document.getElementById('preview');
+    const previewHex = document.getElementById('preview-hex');
+    const previewRgb = document.getElementById('preview-rgb');
+    const gradientPalette = document.getElementById('gradient-palette');
+    const hueStrip = document.getElementById('hue-strip');
+    const hueIndicator = document.getElementById('hue-indicator');
     const palette = document.getElementById('palette');
     const status = document.getElementById('status');
     const randomBtn = document.getElementById('random-btn');
     const selectBtn = document.getElementById('select-btn');
     
-    // Palette colors
+    // Current state
+    let currentHue = 210; // Start with blue hue
+    
+    // Build gradient palette based on current hue
+    function buildGradientPalette(hue) {
+      gradientPalette.innerHTML = '';
+      
+      // Create a 20x10 grid (200 colors)
+      // Rows: Lightness from 95% to 5%
+      // Columns: Saturation from 0% to 100%
+      for (let row = 0; row < 10; row++) {
+        for (let col = 0; col < 20; col++) {
+          const lightness = 95 - (row * 10);
+          const saturation = col * 5;
+          
+          const { r, g, b } = hslToRgb(hue, saturation, lightness);
+          const hexColor = rgbToHex(r, g, b);
+          
+          const div = document.createElement('div');
+          div.className = 'gradient-color';
+          div.style.backgroundColor = hexColor;
+          div.dataset.color = hexColor;
+          
+          // Hover to preview
+          div.addEventListener('mouseenter', () => {
+            updateColor(hexColor, false);
+          });
+          
+          // Click to select
+          div.addEventListener('click', () => {
+            updateColor(hexColor, true);
+            document.querySelectorAll('.gradient-color').forEach(el => el.classList.remove('selected'));
+            div.classList.add('selected');
+            status.textContent = `✓ Selected from gradient: ${hexColor}`;
+            status.className = 'status success';
+          });
+          
+          gradientPalette.appendChild(div);
+        }
+      }
+    }
+    
+    // Hue strip interaction
+    hueStrip.addEventListener('click', (e) => {
+      const rect = hueStrip.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const percentage = x / rect.width;
+      currentHue = Math.round(percentage * 360);
+      
+      updateHueIndicator(percentage);
+      buildGradientPalette(currentHue);
+    });
+    
+    hueStrip.addEventListener('mousemove', (e) => {
+      if (e.buttons === 1) { // If mouse button is pressed
+        const rect = hueStrip.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const percentage = Math.max(0, Math.min(1, x / rect.width));
+        currentHue = Math.round(percentage * 360);
+        
+        updateHueIndicator(percentage);
+        buildGradientPalette(currentHue);
+      }
+    });
+    
+    function updateHueIndicator(percentage) {
+      hueIndicator.style.left = `${percentage * 100}%`;
+    }
+    
+    // Quick palette colors
     const paletteColors = [
-      '#FF6B6B', '#FF8E72', '#FFA94D', '#FFD43B', '#A9E34B', '#69DB7C', '#38D9A9', '#3BC9DB',
-      '#4DABF7', '#748FFC', '#9775FA', '#DA77F2', '#F783AC', '#E64980', '#C92A2A', '#E67700',
-      '#2F9E44', '#1971C2', '#6741D9', '#9C36B5', '#FFFFFF', '#ADB5BD', '#868E96', '#495057'
+      '#FF0000', '#FF4500', '#FF8C00', '#FFD700', '#FFFF00',
+      '#9ACD32', '#00FF00', '#00FA9A', '#00CED1', '#00BFFF',
+      '#0000FF', '#4169E1', '#8A2BE2', '#9370DB', '#FF00FF',
+      '#FF1493', '#FF69B4', '#FFC0CB', '#FFFFFF', '#D3D3D3',
+      '#A9A9A9', '#808080', '#696969', '#000000', '#8B4513'
     ];
     
-    // Build palette
+    // Build quick palette
     paletteColors.forEach(color => {
       const div = document.createElement('div');
       div.className = 'palette-color';
       div.style.backgroundColor = color;
-      div.onclick = () => updateColor(color);
+      div.onclick = () => {
+        updateColor(color, true);
+        status.textContent = `✓ Selected: ${color}`;
+        status.className = 'status success';
+      };
       palette.appendChild(div);
     });
     
-    function updateColor(hex) {
+    function updateColor(hex, permanent = true) {
       hex = hex.toUpperCase();
-      colorInput.value = hex;
-      hexValue.value = hex;
+      
+      if (permanent) {
+        colorInput.value = hex;
+        hexValue.value = hex;
+      }
       
       const { r, g, b } = hexToRgb(hex);
-      rgbValue.value = `rgb(${r}, ${g}, ${b})`;
+      const rgbStr = `rgb(${r}, ${g}, ${b})`;
+      
+      if (permanent) {
+        rgbValue.value = rgbStr;
+      }
       
       const { h, s, l } = rgbToHsl(r, g, b);
-      hslValue.value = `hsl(${h}, ${s}%, ${l}%)`;
+      const hslStr = `hsl(${h}, ${s}%, ${l}%)`;
+      
+      if (permanent) {
+        hslValue.value = hslStr;
+      }
       
       preview.style.backgroundColor = hex;
-      preview.style.color = getContrastColor(hex);
-      preview.textContent = hex;
+      const contrastColor = getContrastColor(hex);
+      preview.style.color = contrastColor;
+      previewHex.textContent = hex;
+      previewRgb.textContent = rgbStr;
       
-      status.textContent = '';
-      status.className = 'status';
+      if (!permanent) {
+        status.textContent = `Hovering: ${hex}`;
+        status.className = 'status';
+      }
     }
     
     // Event listeners
-    colorInput.addEventListener('input', (e) => updateColor(e.target.value));
+    colorInput.addEventListener('input', (e) => {
+      updateColor(e.target.value, true);
+      status.textContent = '';
+      status.className = 'status';
+    });
     
     hexValue.addEventListener('input', (e) => {
       let val = e.target.value;
       if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
-        updateColor(val);
+        updateColor(val, true);
       }
     });
     
-    randomBtn.addEventListener('click', () => updateColor(randomColor()));
+    randomBtn.addEventListener('click', () => {
+      const newColor = randomColor();
+      updateColor(newColor, true);
+      status.textContent = `🎲 Random color: ${newColor}`;
+      status.className = 'status success';
+    });
     
     selectBtn.addEventListener('click', () => {
       const color = hexValue.value;
@@ -299,12 +528,14 @@ public static class ColorPickerHtmlProvider
     });
     
     // Initialize
-    updateColor('#3498DB');
+    updateColor('#3498DB', true);
+    buildGradientPalette(currentHue);
+    updateHueIndicator(currentHue / 360);
     
     // Listen for initial color from host
     window.addEventListener('message', (event) => {
       if (event.data?.initialColor) {
-        updateColor(event.data.initialColor);
+        updateColor(event.data.initialColor, true);
       }
     });
   </script>

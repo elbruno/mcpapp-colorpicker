@@ -8,37 +8,13 @@ builder.WebHost.UseUrls("http://localhost:3001");
 
 builder.Services.AddMcpServer()
     .WithHttpTransport()
-    .WithToolsFromAssembly();
+    .WithToolsFromAssembly()
+    .WithResourcesFromAssembly();
 
 var app = builder.Build();
 
 // MCP endpoint - map to /mcp path
 app.MapMcp("/mcp");
-
-// Serve the color picker UI HTML for the MCP App View
-app.MapGet("/ui/color-picker", async () =>
-{
-    var html = await GetColorPickerHtml();
-    return Results.Content(html, "text/html");
-});
-
-// API endpoint to get the color picker UI as MCP resource
-app.MapGet("/mcp/resources/ui/color-picker", async () =>
-{
-    var html = await GetColorPickerHtml();
-    return Results.Json(new
-    {
-        contents = new[]
-        {
-            new
-            {
-                uri = "ui://color-picker/app.html",
-                mimeType = "text/html",
-                text = html
-            }
-        }
-    });
-});
 
 Console.WriteLine();
 Console.WriteLine("🎨 Color Picker MCP App (C#)");
@@ -54,8 +30,13 @@ Console.WriteLine();
 
 await app.RunAsync();
 
-static Task<string> GetColorPickerHtml()
+/// <summary>
+/// HTML content provider for the color picker UI
+/// </summary>
+public static class ColorPickerHtmlProvider
 {
+  public static Task<string> GetHtml()
+  {
     var html = """
 <!DOCTYPE html>
 <html lang="en">
@@ -331,6 +312,7 @@ static Task<string> GetColorPickerHtml()
 </html>
 """;
     return Task.FromResult(html);
+  }
 }
 
 /// <summary>
@@ -339,29 +321,49 @@ static Task<string> GetColorPickerHtml()
 [McpServerToolType]
 public static class ColorPickerTools
 {
-    /// <summary>
-    /// Opens an interactive color picker UI to visually select a color.
-    /// </summary>
-    [McpServerTool, Description("Open an interactive color picker to select a color visually. Returns an HTML UI that allows the user to pick colors interactively.")]
-    public static ColorPickerResult ColorPicker(
-        [Description("Initial color to display (hex format like #FF5733). Default: #3498DB")]
+  /// <summary>
+  /// Opens an interactive color picker UI to visually select a color.
+  /// </summary>
+  [McpServerTool]
+  [Description("Open an interactive color picker to select a color visually. Returns an HTML UI that allows the user to pick colors interactively.")]
+  [McpMeta("ui", JsonValue = """{ "resourceUri": "ui://color-picker/app.html" }""")]
+  public static ColorPickerResult ColorPicker(
+      [Description("Initial color to display (hex format like #FF5733). Default: #3498DB")]
         string? initialColor = "#3498DB")
+  {
+    return new ColorPickerResult
     {
-        return new ColorPickerResult
-        {
-            InitialColor = initialColor ?? "#3498DB",
-            UiResourceUri = "ui://color-picker/app.html",
-            Message = "Opening color picker UI..."
-        };
-    }
+      InitialColor = initialColor ?? "#3498DB",
+      Message = "Opening color picker UI..."
+    };
+  }
+}
+
+/// <summary>
+/// Color Picker MCP Resources
+/// </summary>
+[McpServerResourceType]
+public static class ColorPickerResources
+{
+  /// <summary>
+  /// Provides the HTML UI for the color picker app
+  /// </summary>
+  [McpServerResource(
+      UriTemplate = "ui://color-picker/app.html",
+      MimeType = "text/html",
+      Title = "Color Picker UI")]
+  [Description("Interactive color picker UI")]
+  public static async Task<string> GetColorPickerUI()
+  {
+    return await ColorPickerHtmlProvider.GetHtml();
+  }
 }
 
 public class ColorPickerResult
 {
-    public string InitialColor { get; set; } = "#3498DB";
-    public string UiResourceUri { get; set; } = "";
-    public string Message { get; set; } = "";
+  public string InitialColor { get; set; } = "#3498DB";
+  public string Message { get; set; } = "";
 
-    public override string ToString() =>
-        $"Color Picker ready. Initial color: {InitialColor}\nUI Resource: {UiResourceUri}";
+  public override string ToString() =>
+      $"Color Picker ready. Initial color: {InitialColor}";
 }

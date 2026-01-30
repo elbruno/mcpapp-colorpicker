@@ -146,7 +146,6 @@ public static class ColorPickerHtmlProvider
       border-radius: 2px;
     }
     
-    .palette { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
     .status {
       text-align: center; font-size: 12px; margin-top: 12px; min-height: 18px;
       color: var(--vscode-descriptionForeground, #888);
@@ -197,24 +196,6 @@ public static class ColorPickerHtmlProvider
       }).join('').toUpperCase();
     }
     
-    function rgbToHsl(r, g, b) {
-      r /= 255; g /= 255; b /= 255;
-      const max = Math.max(r, g, b), min = Math.min(r, g, b);
-      let h, s, l = (max + min) / 2;
-      if (max === min) {
-        h = s = 0;
-      } else {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) {
-          case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-          case g: h = ((b - r) / d + 2) / 6; break;
-          case b: h = ((r - g) / d + 4) / 6; break;
-        }
-      }
-      return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
-    }
-    
     function hslToRgb(h, s, l) {
       h /= 360;
       s /= 100;
@@ -248,10 +229,6 @@ public static class ColorPickerHtmlProvider
       const { r, g, b } = hexToRgb(hex);
       const brightness = (r * 299 + g * 587 + b * 114) / 1000;
       return brightness > 128 ? '#000000' : '#ffffff';
-    }
-    
-    function randomColor() {
-      return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
     }
     
     // Elements

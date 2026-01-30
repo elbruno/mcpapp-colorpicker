@@ -5,16 +5,29 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-Apps-blue)](https://modelcontextprotocol.github.io/ext-apps/api/)
 
-A **Model Context Protocol (MCP) App** built with .NET that provides an interactive color picker with a rich UI. This is a sample implementation demonstrating how to build MCP Apps using C# and the `ModelContextProtocol.AspNetCore` package.
+A **Model Context Protocol (MCP) App** built with .NET that provides an interactive color picker with a simplified UI. This is a sample implementation demonstrating how to build MCP Apps using C# and the `ModelContextProtocol.AspNetCore` package.
 
 > **Note:** MCP Apps are a new extension to MCP that allows servers to provide interactive UI components. This sample demonstrates how to implement one in .NET/C#.
 
+## 📸 Screenshots
+
+### Initial View
+![Color Picker UI - Initial State](screenshot.png)
+
+### After Selecting a Color
+![Color Picker UI - Color Selected](screenshot-interaction.png)
+
+The simplified interface allows you to:
+1. **Use the Color Slider** to select your base hue from the full color spectrum
+2. **Pick from the Gradient Selector** to choose the exact shade, tint, or tone
+3. **See your selection** instantly in the large preview box with the HEX code
+
 ## ✨ Features
 
-- **Interactive Color Picker UI** - Visual color selection with real-time preview
-- **Multiple Color Formats** - HEX, RGB, and HSL with one-click copy
-- **Quick Color Palette** - 24 preset colors for fast selection
-- **Random Color Generator** - Generate random colors instantly
+- **Simple & Intuitive Interface** - Clean, focused design for easy color selection
+- **Color Slider** - Visual hue selector with full spectrum of colors
+- **Gradient Selector** - 200-color gradient grid showing different shades and tints
+- **Real-time Preview** - See your selected color instantly with HEX code display
 - **VS Code Theme Integration** - Automatically adapts to your VS Code theme
 - **HTTP Transport** - Easy integration with MCP clients
 

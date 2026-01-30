@@ -12,12 +12,15 @@ A **Model Context Protocol (MCP) App** built with .NET that provides an interact
 ## 📸 Screenshots
 
 ### Initial View
+
 ![Color Picker UI - Initial State](screenshot.png)
 
 ### After Selecting a Color
-![Color Picker UI - Color Selected](screenshot-interaction.png)
+
+![15-second demo of the app in VS Code](images/mcpapp-cs-colorpicker-demo.gif)
 
 The simplified interface allows you to:
+
 1. **Use the Color Slider** to select your base hue from the full color spectrum
 2. **Pick from the Gradient Selector** to choose the exact shade, tint, or tone
 3. **See your selection** instantly in the large preview box with the HEX code

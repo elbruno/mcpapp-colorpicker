@@ -90,6 +90,10 @@ Add the following to your VS Code MCP configuration (`.vscode/mcp.json`):
 
 In VS Code with the MCP extension, invoke the `ColorPicker` tool to open the interactive color picker UI.
 
+Sample prompt:
+
+> "I want to select a color to use it later in my webdesign application"
+
 ### 5. (Optional) Expose with ngrok
 
 To access the MCP app from a remote location or share it with others, you can use ngrok to expose your local server:
@@ -145,7 +149,7 @@ mcpapp-colorpicker/
 
 This MCP App uses:
 
-- **[ModelContextProtocol.AspNetCore](https://www.nuget.org/packages/ModelContextProtocol.AspNetCore)** (`0.2.0-preview.1`) - Official .NET SDK for MCP
+- **[ModelContextProtocol.AspNetCore](https://www.nuget.org/packages/ModelContextProtocol.AspNetCore)** (`1.1.0`) - Official .NET SDK for MCP
 - **HTTP Transport** - Exposes MCP endpoint at `/mcp`
 - **Embedded HTML UI** - Color picker interface served at `/ui/color-picker`
 - **Attribute-based Tool Definition** - Uses `[McpServerToolType]` and `[McpServerTool]` attributes
